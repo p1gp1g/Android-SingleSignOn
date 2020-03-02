@@ -18,6 +18,7 @@ import java.lang.reflect.ParameterizedType;
 import java.lang.reflect.Type;
 import java.security.InvalidParameterException;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -78,7 +79,7 @@ public class NextcloudRetrofitServiceMethod<T> {
         this.method = method;
         this.returnType = method.getGenericReturnType();
         Annotation[] methodAnnotations = method.getAnnotations();
-        this.parameterAnnotationsArray = method.getParameterAnnotations();
+        this.parameterAnnotationsArray = filterParameterAnnotations(method.getParameterAnnotations());
 
         for (Annotation annotation : methodAnnotations) {
             parseMethodAnnotation(annotation);
@@ -101,8 +102,26 @@ public class NextcloudRetrofitServiceMethod<T> {
 
     }
 
+    /**
+     * filter out empty parameter annotations (e.g. when using kotlin)
+     * @param annotations
+     * @return
+     */
+    private Annotation[][] filterParameterAnnotations(Annotation[][] annotations) {
+        List<Annotation[]> res = new ArrayList<>();
+
+        for(Annotation[] annotation : annotations) {
+            if(annotation.length > 0) {
+                res.add(annotation);
+            }
+        }
+
+        return res.toArray(new Annotation[res.size()][]);
+    }
+
     public T invoke(NextcloudAPI nextcloudAPI, Object[] args) throws Exception {
-        if(parameterAnnotationsArray.length != args.length) {
+        //if(parameterAnnotationsArray.length != args.length) {
+        if(args.length < parameterAnnotationsArray.length) { // Ignore if too many parameters are given (e.g. when using kotlin)
             throw new InvalidParameterException("Expected: " + parameterAnnotationsArray.length + " params - were: " + args.length);
         }
 
