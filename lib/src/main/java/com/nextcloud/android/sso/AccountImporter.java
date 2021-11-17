@@ -41,6 +41,7 @@ import android.os.Bundle;
 import android.util.Log;
 import android.widget.Toast;
 
+import androidx.activity.result.ActivityResultLauncher;
 import androidx.core.app.ActivityCompat;
 import androidx.core.content.ContextCompat;
 import androidx.fragment.app.Fragment;
@@ -68,6 +69,8 @@ public class AccountImporter {
     private static final String TAG = AccountImporter.class.getCanonicalName();
     private static final String PREF_ACCOUNT_STRING = "PREF_ACCOUNT_STRING";
     private static final String AUTH_TOKEN_SSO = "SSO";
+
+    private static final String REQUEST_CODE = "REQUEST_CODE";
 
     public static final int CHOOSE_ACCOUNT_SSO = 4242;
     public static final int REQUEST_AUTH_TOKEN_SSO = 4243;
@@ -102,6 +105,20 @@ public class AccountImporter {
             Intent intent = AccountManager.newChooseAccountIntent(null, null, ACCOUNT_TYPES,
                     true, null, AUTH_TOKEN_SSO, null, null);
             fragment.startActivityForResult(intent, CHOOSE_ACCOUNT_SSO);
+        } else {
+            throw new NextcloudFilesAppNotInstalledException();
+        }
+    }
+
+    public static void pickNewAccount(Context context, ActivityResultLauncher launcher) throws NextcloudFilesAppNotInstalledException,
+            AndroidGetAccountsPermissionNotGranted {
+        checkAndroidAccountPermissions(context);
+
+        if (appInstalledOrNot(context)) {
+            Intent intent = AccountManager.newChooseAccountIntent(null, null, ACCOUNT_TYPES,
+                    true, null, AUTH_TOKEN_SSO, null, null);
+            intent.putExtra(REQUEST_CODE, CHOOSE_ACCOUNT_SSO);
+            launcher.launch(intent);
         } else {
             throw new NextcloudFilesAppNotInstalledException();
         }
