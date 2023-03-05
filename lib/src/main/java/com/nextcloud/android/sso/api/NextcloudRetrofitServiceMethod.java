@@ -200,9 +200,9 @@ public class NextcloudRetrofitServiceMethod<T> {
                 Type typeArgument = type.getActualTypeArguments()[0];
                 return (T) Retrofit2Helper.WrapInCall(nextcloudAPI, request, typeArgument);
             }
-        } else if(this.returnType == Observable.class) {
+        } else if(this.returnType == Observable.class || this.returnType == io.reactivex.rxjava3.core.Observable.class) {
             return (T) nextcloudAPI.performRequestObservableV2(Object.class, request).map(r -> r.getResponse());
-        } else if (this.returnType == Completable.class) {
+        } else if (this.returnType == Completable.class || this.returnType == io.reactivex.rxjava3.core.Completable.class) {
             return (T) ReactivexHelper.wrapInCompletable(nextcloudAPI, request);
         }
 
