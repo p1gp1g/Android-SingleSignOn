@@ -179,13 +179,17 @@ public class NextcloudRetrofitServiceMethod<T> {
         if(this.returnType instanceof ParameterizedType) {
             ParameterizedType type = (ParameterizedType) returnType;
             Type ownerType = type.getRawType();
-            if(ownerType == Observable.class) {
+            if(ownerType == Observable.class || ownerType == io.reactivex.rxjava3.core.Observable.class) {
                 Type typeArgument = type.getActualTypeArguments()[0];
                 Log.d(TAG, "invoke call to api using observable " + typeArgument);
 
                 // Streaming
                 if(typeArgument == ResponseBody.class) {
-                    return (T) Observable.fromCallable(() -> Okhttp3Helper.getResponseBodyFromRequestV2(nextcloudAPI, request));
+                    if(ownerType == Observable.class) {
+                        return (T) Observable.fromCallable(() -> Okhttp3Helper.getResponseBodyFromRequestV2(nextcloudAPI, request));
+                    } else {
+                        return (T) io.reactivex.rxjava3.core.Observable.fromCallable(() -> Okhttp3Helper.getResponseBodyFromRequestV2(nextcloudAPI, request));
+                    }
                 } else if (typeArgument instanceof ParameterizedType) {
                     ParameterizedType innerType = (ParameterizedType) typeArgument;
                     Type innerOwnerType = innerType.getRawType();
@@ -200,10 +204,14 @@ public class NextcloudRetrofitServiceMethod<T> {
                 Type typeArgument = type.getActualTypeArguments()[0];
                 return (T) Retrofit2Helper.WrapInCall(nextcloudAPI, request, typeArgument);
             }
-        } else if(this.returnType == Observable.class) {
+        } else if (this.returnType == Observable.class) {
             return (T) nextcloudAPI.performRequestObservableV2(Object.class, request).map(r -> r.getResponse());
+        } else if (this.returnType == io.reactivex.rxjava3.core.Observable.class) {
+            return (T) nextcloudAPI.performRequestObservableV3(Object.class, request).map(r -> r.getResponse());
         } else if (this.returnType == Completable.class) {
             return (T) ReactivexHelper.wrapInCompletable(nextcloudAPI, request);
+        } else if (this.returnType == io.reactivex.rxjava3.core.Completable.class) {
+            return (T) ReactivexHelper.wrapInCompletableV3(nextcloudAPI, request);
         }
 
         return nextcloudAPI.performRequestV2(this.returnType, request);
