@@ -45,7 +45,12 @@ The sample app uses the [Retrofit approach](#51-using-retrofit). Be aware though
 ```gradle
 repositories {
     // …
-    maven { url "https://jitpack.io" }
+    maven {
+        url "https://jitpack.io"
+        content {
+            includeModule "com.github.nextcloud", "Android-SingleSignOn"
+        }
+    }
 }
 
 dependencies {
