@@ -1,6 +1,11 @@
 ## Script from https://github.com/tir38/android-lint-entropy-reducer at 07.05.2017
 # adapts to drone, use git username / token as parameter
 
+# SPDX-FileCopyrightText: 2017-2024 Nextcloud GmbH and Nextcloud contributors
+# SPDX-FileCopyrightText: 2017 Jason Atwood 
+# SPDX-FileCopyrightText: 2017 Tobias Kaminsky <tobias@kaminsky.me>
+# SPDX-License-Identifier: GPL-3.0-or-later
+
 Encoding.default_external = Encoding::UTF_8
 Encoding.default_internal = Encoding::UTF_8
 
@@ -48,7 +53,7 @@ require 'xmlsimple'
 # run FindBugs
 puts "running FindBugs..."
 system './gradlew lib:assembleDebug'
-system './gradlew lib:spotbugsDebugReport'
+system './gradlew lib:spotbugsDebug'
 
 # find FindBugs report file
 findbugs_reports = Dir.glob(FINDBUGS_REPORT_FILE)
@@ -112,7 +117,7 @@ previous_git_email = previous_git_email.strip
 system ("git config --local user.name '"  + git_user + "'")
 system ("git config --local user.email 'android@nextcloud.com'")
 system ("git remote rm origin")
-system ("git remote add origin https://" + git_user + ":" + git_token + "@github.com/nextcloud/android-single-signon")
+system ("git remote add origin https://" + git_user + ":" + git_token + "@github.com/nextcloud/android-singlesignon")
 
 # add previous FindBugs result file to git
 system ('git add ' + PREVIOUS_FINDBUGS_RESULTS_FILE)

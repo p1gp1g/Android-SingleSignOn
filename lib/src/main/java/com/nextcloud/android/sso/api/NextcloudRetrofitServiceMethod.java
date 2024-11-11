@@ -1,6 +1,20 @@
+/*
+ * Nextcloud Android SingleSignOn Library
+ *
+ * SPDX-FileCopyrightText: 2018-2024 Nextcloud GmbH and Nextcloud contributors
+ * SPDX-FileCopyrightText: 2023 sim <git@sgougeon.fr>
+ * SPDX-FileCopyrightText: 2021 Tobias Kaminsky <tobias@kaminsky.me>
+ * SPDX-FileCopyrightText: 2021 Stefan Niedermann <info@niedermann.it>
+ * SPDX-FileCopyrightText: 2019 Desperate Coder <echotodevnull@gmail.com>
+ * SPDX-FileCopyrightText: 2018-2019 David Luhmer <david-dev@live.de>
+ * SPDX-License-Identifier: GPL-3.0-or-later
+ */
 package com.nextcloud.android.sso.api;
 
 import android.util.Log;
+
+import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
 
 import com.nextcloud.android.sso.QueryParam;
 import com.nextcloud.android.sso.aidl.NextcloudRequest;
@@ -25,8 +39,6 @@ import java.util.Map;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-import androidx.annotation.NonNull;
-import androidx.annotation.Nullable;
 import io.reactivex.Completable;
 import io.reactivex.Observable;
 import okhttp3.Headers;
@@ -178,31 +190,47 @@ public class NextcloudRetrofitServiceMethod<T> {
         if(this.returnType instanceof ParameterizedType) {
             ParameterizedType type = (ParameterizedType) returnType;
             Type ownerType = type.getRawType();
-            if(ownerType == Observable.class) {
+            if(ownerType == Observable.class || ownerType == io.reactivex.rxjava3.core.Observable.class) {
                 Type typeArgument = type.getActualTypeArguments()[0];
                 Log.d(TAG, "invoke call to api using observable " + typeArgument);
 
                 // Streaming
                 if(typeArgument == ResponseBody.class) {
-                    return (T) Observable.fromCallable(() -> Okhttp3Helper.getResponseBodyFromRequest(nextcloudAPI, request));
+                    if(ownerType == Observable.class) {
+                        return (T) Observable.fromCallable(() -> Okhttp3Helper.getResponseBodyFromRequestV2(nextcloudAPI, request));
+                    } else {
+                        return (T) io.reactivex.rxjava3.core.Observable.fromCallable(() -> Okhttp3Helper.getResponseBodyFromRequestV2(nextcloudAPI, request));
+                    }
                 } else if (typeArgument instanceof ParameterizedType) {
                     ParameterizedType innerType = (ParameterizedType) typeArgument;
                     Type innerOwnerType = innerType.getRawType();
                     if(innerOwnerType == ParsedResponse.class) {
-                        return (T) nextcloudAPI.performRequestObservableV2(innerType.getActualTypeArguments()[0], request);
+                        if(ownerType == Observable.class) {
+                            return (T) nextcloudAPI.performRequestObservableV2(innerType.getActualTypeArguments()[0], request);
+                        } else {
+                            return (T) nextcloudAPI.performRequestObservableV3(innerType.getActualTypeArguments()[0], request);
+                        }
                     }
                 }
                 //fallback
-                return (T) nextcloudAPI.performRequestObservableV2(typeArgument, request).map(r -> r.getResponse());
+                if(ownerType == Observable.class) {
+                    return (T) nextcloudAPI.performRequestObservableV2(typeArgument, request).map(r -> r.getResponse());
+                } else {
+                    return (T) nextcloudAPI.performRequestObservableV3(typeArgument, request).map(r -> r.getResponse());
+                }
 
             } else if(ownerType == Call.class) {
                 Type typeArgument = type.getActualTypeArguments()[0];
                 return (T) Retrofit2Helper.WrapInCall(nextcloudAPI, request, typeArgument);
             }
-        } else if(this.returnType == Observable.class) {
+        } else if (this.returnType == Observable.class) {
             return (T) nextcloudAPI.performRequestObservableV2(Object.class, request).map(r -> r.getResponse());
+        } else if (this.returnType == io.reactivex.rxjava3.core.Observable.class) {
+            return (T) nextcloudAPI.performRequestObservableV3(Object.class, request).map(r -> r.getResponse());
         } else if (this.returnType == Completable.class) {
             return (T) ReactivexHelper.wrapInCompletable(nextcloudAPI, request);
+        } else if (this.returnType == io.reactivex.rxjava3.core.Completable.class) {
+            return (T) ReactivexHelper.wrapInCompletableV3(nextcloudAPI, request);
         }
 
         return nextcloudAPI.performRequestV2(this.returnType, request);
@@ -331,7 +359,7 @@ public class NextcloudRetrofitServiceMethod<T> {
                         + "For dynamic query parameters use @Query.", query);
             }
 
-            // If none found.. parse the static query parameters
+            // If none found… parse the static query parameters
             final String[] pairs = query.split("&");
             for (String pair : pairs) {
                 final int idx = pair.indexOf("=");

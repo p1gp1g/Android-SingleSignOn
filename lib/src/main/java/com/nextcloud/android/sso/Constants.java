@@ -1,25 +1,11 @@
 /*
- * Nextcloud SingleSignOn
+ * Nextcloud Android SingleSignOn Library
  *
- * @author David Luhmer
- *
- * This program is free software: you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation, either version 3 of the License, or
- * (at your option) any later version.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License
- * along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ * SPDX-FileCopyrightText: 2018-2024 Nextcloud GmbH and Nextcloud contributors
+ * SPDX-FileCopyrightText: 2018 David Luhmer <david-dev@live.de>
+ * SPDX-License-Identifier: GPL-3.0-or-later
  */
-
 package com.nextcloud.android.sso;
-
-import com.nextcloud.android.sso.model.FilesAppType;
 
 public class Constants {
 
@@ -39,19 +25,4 @@ public class Constants {
     public static final String EXCEPTION_INVALID_REQUEST_URL = "CE_4";
     public static final String EXCEPTION_HTTP_REQUEST_FAILED = "CE_5";
     public static final String EXCEPTION_ACCOUNT_ACCESS_DECLINED = "CE_6";
-
-    // package related constants
-    /** @deprecated Use {@link FilesAppType#packageId} */
-    @Deprecated
-    public static final String PACKAGE_NAME_PROD = FilesAppType.PROD.packageId;
-    /** @deprecated Use {@link FilesAppType#packageId} */
-    @Deprecated
-    public static final String PACKAGE_NAME_DEV = FilesAppType.DEV.packageId;
-    /** @deprecated Use {@link FilesAppType#accountType} */
-    @Deprecated
-    public static final String ACCOUNT_TYPE_PROD = FilesAppType.PROD.accountType;
-    /** @deprecated Use {@link FilesAppType#accountType} */
-    @Deprecated
-    public static final String ACCOUNT_TYPE_DEV = FilesAppType.DEV.accountType;
-
 }

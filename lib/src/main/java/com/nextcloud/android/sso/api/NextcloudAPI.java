@@ -1,22 +1,14 @@
 /*
- * Nextcloud SingleSignOn
+ * Nextcloud Android SingleSignOn Library
  *
- * @author David Luhmer
- *
- * This program is free software: you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation, either version 3 of the License, or
- * (at your option) any later version.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License
- * along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ * SPDX-FileCopyrightText: 2017-2024 Nextcloud GmbH and Nextcloud contributors
+ * SPDX-FileCopyrightText: 2017-2024 David Luhmer <david-dev@live.de>
+ * SPDX-FileCopyrightText: 2023 Desperate Coder <echotodevnull@gmail.com>
+ * SPDX-FileCopyrightText: 2023 sim <git@sgougeon.fr>
+ * SPDX-FileCopyrightText: 2021-2023 Stefan Niedermann <info@niedermann.it>
+ * SPDX-FileCopyrightText: 2018-2019 Tobias Kaminsky <tobias@kaminsky.me>
+ * SPDX-License-Identifier: GPL-3.0-or-later
  */
-
 package com.nextcloud.android.sso.api;
 
 import static java.lang.annotation.ElementType.METHOD;
@@ -38,28 +30,16 @@ import java.io.Reader;
 import java.lang.annotation.Documented;
 import java.lang.annotation.Retention;
 import java.lang.annotation.Target;
-import java.lang.reflect.Constructor;
 import java.lang.reflect.Type;
 
 import io.reactivex.Observable;
 import io.reactivex.annotations.NonNull;
 
-public class NextcloudAPI {
+public class NextcloudAPI implements AutoCloseable {
 
     private static final String TAG = NextcloudAPI.class.getCanonicalName();
 
-    private static final Void NOTHING = getVoidInstance();
-
-    private static Void getVoidInstance() {
-        //noinspection unchecked
-        final Constructor<Void> constructor = (Constructor<Void>) Void.class.getDeclaredConstructors()[0];
-        constructor.setAccessible(true);
-        try {
-            return constructor.newInstance();
-        } catch (Exception e) {
-            throw new IllegalStateException("Should never happen, but did: unable to instantiate Void");
-        }
-    }
+    private static final EmptyResponse EMPTY_RESPONSE = new EmptyResponse();
 
     private final NetworkRequest networkRequest;
     private Gson gson;
@@ -67,12 +47,14 @@ public class NextcloudAPI {
     @Documented
     @Target(METHOD)
     @Retention(RUNTIME)
-    public @interface FollowRedirects { }
+    public @interface FollowRedirects {
+    }
 
     public interface ApiConnectedListener {
         default void onConnected() {
             Log.i(TAG, "Single Sign On API successfully connected.");
         }
+
         void onError(Exception e);
     }
 
@@ -101,30 +83,16 @@ public class NextcloudAPI {
      *
      * <p>A good place <em>depending on your actual implementation</em> might be {@link Activity#onStop()}.</p>
      */
+    @Override
     @SuppressWarnings("JavadocReference")
-    public void stop() {
+    public void close() {
         gson = null;
-        networkRequest.stop();
-    }
-
-    /**
-     * @deprecated Use {@link #performRequestObservableV2(Type, NextcloudRequest)}
-     * @see <a href="https://github.com/nextcloud/Android-SingleSignOn/issues/133">Issue #133</a>
-     */
-    @Deprecated
-    public <T> Observable<T> performRequestObservable(final Type type, final NextcloudRequest request) {
-        return Observable.fromPublisher( s -> {
-            try {
-                s.onNext(performRequest(type, request));
-                s.onComplete();
-            } catch (Exception e) {
-                s.onError(e);
-            }
-        });
+        networkRequest.close();
     }
 
     public <T> Observable<ParsedResponse<T>> performRequestObservableV2(final Type type, final NextcloudRequest request) {
-        return Observable.fromPublisher( s -> {
+        ensureTypeNotVoid(type);
+        return Observable.fromPublisher(s -> {
             try {
                 final Response response = performNetworkRequestV2(request);
                 s.onNext(ParsedResponse.of(convertStreamToTargetEntity(response.getBody(), type), response.getPlainHeaders()));
@@ -135,40 +103,46 @@ public class NextcloudAPI {
         });
     }
 
-    /**
-     * @deprecated Use {@link #performRequestV2(Type, NextcloudRequest)}
-     * @see <a href="https://github.com/nextcloud/Android-SingleSignOn/issues/133">Issue #133</a>
-     */
-    @Deprecated
-    public <T> T performRequest(final @NonNull Type type, NextcloudRequest request) throws Exception {
-        Log.d(TAG, "performRequest() called with: type = [" + type + "], request = [" + request + "]");
-        return convertStreamToTargetEntity(performNetworkRequest(request), type);
+    public <T> io.reactivex.rxjava3.core.Observable<ParsedResponse<T>> performRequestObservableV3(final Type type, final NextcloudRequest request) {
+        ensureTypeNotVoid(type);
+        return io.reactivex.rxjava3.core.Observable.fromPublisher(s -> {
+            try {
+                final Response response = performNetworkRequestV2(request);
+                s.onNext(ParsedResponse.of(convertStreamToTargetEntity(response.getBody(), type), response.getPlainHeaders()));
+                s.onComplete();
+            } catch (Exception e) {
+                s.onError(e);
+            }
+        });
     }
 
     public <T> T performRequestV2(final @NonNull Type type, NextcloudRequest request) throws Exception {
         Log.d(TAG, "performRequestV2() called with: type = [" + type + "], request = [" + request + "]");
+        ensureTypeNotVoid(type);
         final Response response = performNetworkRequestV2(request);
         return convertStreamToTargetEntity(response.getBody(), type);
     }
 
-    private <T> T convertStreamToTargetEntity(InputStream inputStream, Type targetEntity) throws IOException {
+    public <T> T convertStreamToTargetEntity(InputStream inputStream, Type targetEntity) throws IOException {
+        ensureTypeNotVoid(targetEntity);
+
         final T result;
         try (InputStream os = inputStream;
              Reader targetReader = new InputStreamReader(os)) {
-            if (targetEntity != Void.class) {
+            if (targetEntity == EmptyResponse.class) {
+                //noinspection unchecked
+                result = (T) EMPTY_RESPONSE;
+            } else {
                 result = gson.fromJson(targetReader, targetEntity);
                 if (result == null) {
                     if (targetEntity == Object.class) {
                         //noinspection unchecked
-                        return (T) NOTHING;
+                        return (T) EMPTY_RESPONSE;
                     } else {
                         throw new IllegalStateException("Could not instantiate \"" +
-                                targetEntity.toString() + "\", because response was null.");
+                                targetEntity + "\", because response was null.");
                     }
                 }
-            } else {
-                //noinspection unchecked
-                result = (T) NOTHING;
             }
         }
         return result;
@@ -180,23 +154,15 @@ public class NextcloudAPI {
      * @param request {@link NextcloudRequest} request to be executed on server via Files app
      * @return InputStream answer from server as InputStream
      * @throws Exception or {@link SSOException}
-     * @see <a href="https://github.com/nextcloud/Android-SingleSignOn/issues/133">Issue #133</a>
-     * @deprecated Use {@link #performNetworkRequestV2(NextcloudRequest)}
      */
-    @Deprecated
-    public InputStream performNetworkRequest(NextcloudRequest request) throws Exception {
-        return networkRequest.performNetworkRequest(request, request.getBodyAsStream());
+    public Response performNetworkRequestV2(@NonNull NextcloudRequest request) throws Exception {
+        return networkRequest.performNetworkRequestV2(request, request.getBodyAsStream());
     }
 
-    /**
-     * The InputStreams needs to be closed after reading from it
-     *
-     * @param request {@link NextcloudRequest} request to be executed on server via Files app
-     * @return InputStream answer from server as InputStream
-     * @throws Exception or {@link SSOException}
-     */
-    public Response performNetworkRequestV2(NextcloudRequest request) throws Exception {
-        return networkRequest.performNetworkRequestV2(request, request.getBodyAsStream());
+    private void ensureTypeNotVoid(final @NonNull Type type) {
+        if (type == Void.class) {
+            throw new IllegalArgumentException(Void.class.getSimpleName() + " is not supported. Use " + EmptyResponse.class.getSimpleName() + " for calls without a response body. See also: https://github.com/nextcloud/Android-SingleSignOn/issues/541");
+        }
     }
 
     protected Gson getGson() {

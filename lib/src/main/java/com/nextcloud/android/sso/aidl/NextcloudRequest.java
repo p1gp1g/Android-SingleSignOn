@@ -1,24 +1,19 @@
 /*
- *  Nextcloud SingleSignOn
+ * Nextcloud Android SingleSignOn Library
  *
- *  @author David Luhmer
- *
- * This program is free software: you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation, either version 3 of the License, or
- * (at your option) any later version.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License
- * along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ * SPDX-FileCopyrightText: 2017-2024 Nextcloud GmbH and Nextcloud contributors
+ * SPDX-FileCopyrightText: 2019-2021 Desperate Coder <echotodevnull@gmail.com>
+ * SPDX-FileCopyrightText: 2021 Stefan Niedermann <info@niedermann.it>
+ * SPDX-FileCopyrightText: 2019 Tobias Kaminsky <tobias@kaminsky.me>
+ * SPDX-FileCopyrightText: 2019 Unpublished <unpublished@gmx.net>
+ * SPDX-FileCopyrightText: 2017-2019 David Luhmer <david-dev@live.de>
+ * SPDX-License-Identifier: GPL-3.0-or-later
  */
-
 package com.nextcloud.android.sso.aidl;
 
+import androidx.annotation.NonNull;
+import androidx.core.util.ObjectsCompat;
+import androidx.core.util.Pair;
 
 import com.nextcloud.android.sso.QueryParam;
 
@@ -31,11 +26,10 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 
-import androidx.core.util.ObjectsCompat;
-import androidx.core.util.Pair;
-import lombok.ToString;
-
-@ToString
+/**
+ * This class represents a request to the Nextcloud server.
+ * It contains all necessary information to perform a request.
+ */
 public class NextcloudRequest implements Serializable {
 
     private static final long serialVersionUID = 215521212534240L; //assign a long value
@@ -94,23 +88,6 @@ public class NextcloudRequest implements Serializable {
 
         public Builder setHeader(Map<String, List<String>> header) {
             ncr.header = header;
-            return this;
-        }
-
-        /**
-         * Sets the parameters for this request.
-         * All existing parameters will be wiped!
-         * @param parameter new set of parameters
-         * @return this (Builder)
-         * @deprecated since this won't allow RFC 3986 compliant parameters, please use {@link #setParameter(Collection) setParameter(Collection)} instead
-         */
-        @Deprecated
-        public Builder setParameter(Map<String, String> parameter) {
-            ncr.parameter = parameter;
-            ncr.parameterV2 = new ArrayList<>();
-            for (Map.Entry<String, String> mapEntry : parameter.entrySet()) {
-                ncr.parameterV2.add(new QueryParam(mapEntry.getKey(), mapEntry.getValue()));
-            }
             return this;
         }
 
@@ -236,16 +213,6 @@ public class NextcloudRequest implements Serializable {
         return this.parameterV2;
     }
 
-    /**
-     * Returns the set or parameters for this request.
-     * @return set of parameters
-     * @deprecated since this won't allow RFC 3986 compliant parameters, please use {@link #getParameterV2() getParameterV2()} instead
-     */
-    @Deprecated
-    public Map<String, String> getParameter() {
-        return parameter;
-    }
-
     public String getRequestBody() {
         return this.requestBody;
     }
@@ -323,4 +290,21 @@ public class NextcloudRequest implements Serializable {
         return equal;
     }
 
+    @NonNull
+    @Override
+    public String toString() {
+        return "NextcloudRequest{" +
+            "method='" + method + '\'' +
+            ", header=" + header +
+            ", parameter=" + parameter +
+            ", requestBody='" + requestBody + '\'' +
+            ", url='" + url + '\'' +
+            ", token='" + token + '\'' +
+            ", packageName='" + packageName + '\'' +
+            ", accountName='" + accountName + '\'' +
+            ", bodyAsStream=" + bodyAsStream +
+            ", followRedirects=" + followRedirects +
+            ", parameterV2=" + parameterV2 +
+            '}';
+    }
 }

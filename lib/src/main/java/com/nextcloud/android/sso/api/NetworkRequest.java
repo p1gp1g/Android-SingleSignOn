@@ -1,3 +1,12 @@
+/*
+ * Nextcloud Android SingleSignOn Library
+ *
+ * SPDX-FileCopyrightText: 2018-2024 Nextcloud GmbH and Nextcloud contributors
+ * SPDX-FileCopyrightText: 2021-2023 Stefan Niedermann <info@niedermann.it>
+ * SPDX-FileCopyrightText: 2018-2020 David Luhmer <david-dev@live.de>
+ * SPDX-FileCopyrightText: 2019 Tobias Kaminsky <tobias@kaminsky.me>
+ * SPDX-License-Identifier: GPL-3.0-or-later
+ */
 package com.nextcloud.android.sso.api;
 
 import android.content.Context;
@@ -12,7 +21,7 @@ import com.nextcloud.android.sso.model.SingleSignOnAccount;
 
 import java.io.InputStream;
 
-public abstract class NetworkRequest {
+public abstract class NetworkRequest implements AutoCloseable {
 
     private static final String TAG = NetworkRequest.class.getCanonicalName();
 
@@ -34,8 +43,6 @@ public abstract class NetworkRequest {
         }
     }
 
-    protected abstract InputStream performNetworkRequest(NextcloudRequest request, InputStream requestBodyInputStream) throws Exception;
-
     protected abstract Response performNetworkRequestV2(NextcloudRequest request, InputStream requestBodyInputStream) throws Exception;
 
     protected void connectApiWithBackoff() {
@@ -45,11 +52,12 @@ public abstract class NetworkRequest {
             connect(mAccount.type);
         }, () -> {
             Log.e(TAG, "Unable to recover API");
-            stop();
+            close();
         }).start();
     }
 
-    protected void stop() {
+    @Override
+    public void close() {
         mCallback = null;
         mAccount = null;
         mDestroyed = true;

@@ -1,12 +1,19 @@
+/*
+ * Nextcloud Android Single-Sign-On Library
+ *
+ * SPDX-FileCopyrightText: 2017-2024 Nextcloud GmbH and Nextcloud contributors
+ * SPDX-License-Identifier: GPL-3.0-or-later
+ */
+ 
 import com.github.spotbugs.snom.SpotBugsTask
+import com.github.spotbugs.snom.Confidence
+import com.github.spotbugs.snom.Effort
 
 repositories {
     google()
     maven { url "https://jitpack.io" }
     mavenCentral()
-    maven {
-        url 'https://plugins.gradle.org/m2/'
-    }
+    maven { url 'https://plugins.gradle.org/m2/' }
 }
 
 apply plugin: 'com.android.library'
@@ -17,8 +24,9 @@ apply plugin: 'maven-publish' // needed for JitPack.io
 group = 'com.github.nextcloud'
 
 spotbugs {
-    toolVersion = '3.1.12'
-    ignoreFailures = true
+    ignoreFailures = true // should continue checking
+    effort = Effort.MAX
+    reportLevel = Confidence.valueOf('MEDIUM')
 }
 
 configurations {
@@ -26,12 +34,17 @@ configurations {
 }
 
 android {
-    compileSdkVersion 31
+    namespace 'com.nextcloud.android.sso'
+    compileSdk 34
+
     defaultConfig {
-        minSdkVersion 21
-        targetSdkVersion 31
-        versionCode 1
-        versionName '1.0'
+        minSdk 21
+        targetSdk 34
+        consumerProguardFiles 'consumer-proguard-rules.pro'
+    }
+
+    buildFeatures {
+        aidl true
     }
 
     buildTypes {
@@ -40,51 +53,54 @@ android {
             proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
         }
     }
+
     compileOptions {
         coreLibraryDesugaringEnabled true
-        sourceCompatibility JavaVersion.VERSION_11
-        targetCompatibility JavaVersion.VERSION_11
+        sourceCompatibility JavaVersion.VERSION_17
+        targetCompatibility JavaVersion.VERSION_17
     }
-    lintOptions {
-        // translations are imported from transifex, so no need to check here
-        disable 'MissingTranslation'
-        disable 'ExtraTranslation'
-        disable 'MissingQuantity'
-        disable 'InconsistentArrays'
-        disable 'TypographyEllipsis'
-        disable 'GradleDependency'
-        disable 'VectorPath'
-        disable 'IconMissingDensityFolder'
-        disable 'IconDensities'
+
+    publishing {
+        singleVariant('release') {
+            withSourcesJar()
+            withJavadocJar()
+        }
+    }
+
+    productFlavors {}
+
+    lint {
         abortOnError false
+        disable 'MissingTranslation', 'ExtraTranslation', 'MissingQuantity', 'InconsistentArrays', 'TypographyEllipsis', 'GradleDependency', 'VectorPath', 'IconMissingDensityFolder', 'IconDensities'
+        htmlOutput file("$project.layout.buildDirectory/reports/lint/lint.html")
         htmlReport true
-        htmlOutput file("$project.buildDir/reports/lint/lint.html")
     }
-    productFlavors {
-    }
+}
 
-    tasks.register("spotbugsDebugReport", SpotBugsTask) {
-        ignoreFailures = true
-        effort = "max"
-        reportLevel = "medium"
-        classes = fileTree("$project.buildDir/intermediates/javac/debug/classes/")
-        excludeFilter = file("${project.rootDir}/spotbugs-filter.xml")
+tasks.withType(SpotBugsTask).configureEach { task ->
+    String variantNameCap = task.name.replace("spotbugs", "")
 
-        reports {
-            xml.enabled = false
-            html {
-                enabled = true
-                destination = file("$project.buildDir/reports/spotbugs/spotbugs.html")
-            }
+    dependsOn "compile${variantNameCap}Sources"
+
+    excludeFilter.set(file("${project.rootDir}/spotbugs-filter.xml"))
+    classes = fileTree("$project.layout.buildDirectory/intermediates/javac/debug/classes/")
+    reports {
+        xml {
+            required = true
+        }
+        html {
+            required = true
+            outputLocation = file("$project.layout.buildDirectory/reports/spotbugs/spotbugs.html")
+            stylesheet = 'fancy.xsl'
         }
     }
 }
 
-task ktlint(type: JavaExec, group: "verification") {
+tasks.register('ktlint', JavaExec) {
     description = "Check Kotlin code style."
     main = "com.pinterest.ktlint.Main"
     classpath = configurations.ktlint
-    args "--reporter=plain", "--reporter=plain,output=${buildDir}/ktlint.txt,src/**/*.kt"
+    args "--reporter=plain", "--reporter=plain,output=${project.layout.buildDirectory}/ktlint.txt,src/**/*.kt"
 }
 
 detekt {
@@ -98,34 +114,32 @@ detekt {
 }
 
 dependencies {
-    coreLibraryDesugaring 'com.android.tools:desugar_jdk_libs:1.1.5'
+    coreLibraryDesugaring 'com.android.tools:desugar_jdk_libs:2.1.3'
 
-    implementation "androidx.appcompat:appcompat:1.3.1"
-    implementation 'androidx.annotation:annotation:1.3.0'
-    implementation 'androidx.core:core:1.7.0'
-    implementation 'androidx.fragment:fragment:1.3.6'
+    implementation "androidx.appcompat:appcompat:1.7.0"
+    implementation 'androidx.annotation:annotation:1.9.1'
+    implementation 'androidx.core:core:1.13.1'
+    implementation 'androidx.fragment:fragment:1.8.5'
 
-    compileOnly "org.projectlombok:lombok:1.18.22"
-    annotationProcessor "org.projectlombok:lombok:1.18.20"
+    implementation 'com.google.android.material:material:1.12.0'
 
-    api 'com.google.code.gson:gson:2.8.9'
+    api 'com.google.code.gson:gson:2.11.0'
 
     implementation 'io.reactivex.rxjava2:rxjava:2.2.21'
+    implementation 'io.reactivex.rxjava3:rxjava:3.1.9'
 
-    implementation 'commons-io:commons-io:2.11.0'
+    implementation 'commons-io:commons-io:2.17.0'
 
-    implementation 'com.squareup.retrofit2:retrofit:2.9.0'
-    implementation 'com.squareup.okhttp3:okhttp:3.14.9'
+    implementation 'com.squareup.retrofit2:retrofit:2.11.0'
+    implementation 'com.squareup.okhttp3:okhttp:4.12.0'
 
-    spotbugsPlugins 'com.h3xstream.findsecbugs:findsecbugs-plugin:1.11.0'
-    spotbugsPlugins 'com.mebigfatguy.fb-contrib:fb-contrib:7.4.7'
+    spotbugsPlugins 'com.h3xstream.findsecbugs:findsecbugs-plugin:1.13.0'
+    spotbugsPlugins 'com.mebigfatguy.fb-contrib:fb-contrib:7.6.5'
 
-    ktlint "com.pinterest:ktlint:0.43.0"
+    ktlint "com.pinterest:ktlint:0.51.0-FINAL"
 
-    // Required for local unit tests (JUnit 4 framework)
     testImplementation 'junit:junit:4.13.2'
-    // required if you want to use Mockito for unit tests
-    testImplementation 'org.mockito:mockito-core:4.0.0'
+    testImplementation 'org.mockito:mockito-core:5.14.2'
 }
 
 afterEvaluate {

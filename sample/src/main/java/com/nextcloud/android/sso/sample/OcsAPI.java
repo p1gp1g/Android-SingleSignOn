@@ -1,22 +1,10 @@
 /*
- * Nextcloud SingleSignOn
+ * Nextcloud Android SingleSignOn Library
  *
- * @author Stefan Niedermann
- *
- * This program is free software: you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation, either version 3 of the License, or
- * (at your option) any later version.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License
- * along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ * SPDX-FileCopyrightText: 2021-2024 Nextcloud GmbH and Nextcloud contributors
+ * SPDX-FileCopyrightText: 2021 Stefan Niedermann <info@niedermann.it>
+ * SPDX-License-Identifier: GPL-3.0-or-later
  */
-
 package com.nextcloud.android.sso.sample;
 
 import com.google.gson.annotations.SerializedName;
@@ -52,14 +40,14 @@ public interface OcsAPI {
     class CustomResponse {
         public OcsNode ocs;
 
-        static class OcsNode {
+        public static class OcsNode {
             public DataNode data;
 
-            static class DataNode {
+            public static class DataNode {
                 public VersionNode version;
                 public CapabilitiesNode capabilities;
 
-                static class VersionNode {
+                public static class VersionNode {
                     /**
                      * You can map the <code>JSON</code> attributes to other variable names using {@link SerializedName}.
                      * See <a href="https://github.com/google/gson"><code>Gson</code></a>- and <a href="https://square.github.io/retrofit/"><code>Retrofit</code></a>-Documentation for all possibilities.
@@ -68,10 +56,10 @@ public interface OcsAPI {
                     public String semanticVersion;
                 }
 
-                static class CapabilitiesNode {
+                public static class CapabilitiesNode {
                     public ThemingNode theming;
 
-                    static class ThemingNode {
+                    public static class ThemingNode {
                         public String name;
                     }
                 }

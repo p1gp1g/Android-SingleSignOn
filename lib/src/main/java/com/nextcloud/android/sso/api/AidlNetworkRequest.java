@@ -1,22 +1,12 @@
 /*
- * Nextcloud SingleSignOn
+ * Nextcloud Android SingleSignOn Library
  *
- * @author David Luhmer
- *
- * This program is free software: you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation, either version 3 of the License, or
- * (at your option) any later version.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License
- * along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ * SPDX-FileCopyrightText: 2018-2024 Nextcloud GmbH and Nextcloud contributors
+ * SPDX-FileCopyrightText: 2021-2023 Stefan Niedermann <info@niedermann.it>
+ * SPDX-FileCopyrightText: 2019 Tobias Kaminsky <tobias@kaminsky.me>
+ * SPDX-FileCopyrightText: 2019-2020 David Luhmer <david-dev@live.de>
+ * SPDX-License-Identifier: GPL-3.0-or-later
  */
-
 package com.nextcloud.android.sso.api;
 
 import static com.nextcloud.android.sso.aidl.ParcelFileDescriptorUtil.pipeFrom;
@@ -38,10 +28,10 @@ import androidx.annotation.Nullable;
 
 import com.google.gson.Gson;
 import com.google.gson.internal.LinkedTreeMap;
+import com.nextcloud.android.sso.FilesAppTypeRegistry;
 import com.nextcloud.android.sso.aidl.IInputStreamService;
 import com.nextcloud.android.sso.aidl.NextcloudRequest;
 import com.nextcloud.android.sso.exceptions.NextcloudApiNotRespondingException;
-import com.nextcloud.android.sso.model.FilesAppType;
 import com.nextcloud.android.sso.model.SingleSignOnAccount;
 
 import java.io.ByteArrayInputStream;
@@ -101,14 +91,14 @@ public class AidlNetworkRequest extends NetworkRequest {
         Log.d(TAG, "[connect] Binding to AccountManagerService for type [" + type + "]");
         super.connect(type);
 
-        final String componentName = FilesAppType.findByAccountType(type).packageId;
+        final String componentName = FilesAppTypeRegistry.getInstance().findByAccountType(type).packageId();
 
         Log.d(TAG, "[connect] Component name is: [" + componentName + "]");
 
         try {
             final Intent intentService = new Intent();
             intentService.setComponent(new ComponentName(componentName,
-                    "com.owncloud.android.services.AccountManagerService"));
+                "com.owncloud.android.services.AccountManagerService"));
             // https://developer.android.com/reference/android/content/Context#BIND_ABOVE_CLIENT
             if (!mContext.bindService(intentService, mConnection, Context.BIND_AUTO_CREATE | Context.BIND_ABOVE_CLIENT)) {
                 Log.d(TAG, "[connect] Binding to AccountManagerService returned false");
@@ -128,8 +118,9 @@ public class AidlNetworkRequest extends NetworkRequest {
         connectApiWithBackoff();
     }
 
-    public void stop() {
-        super.stop();
+    @Override
+    public void close() {
+        super.close();
 
         unbindService();
         mContext = null;
@@ -155,11 +146,11 @@ public class AidlNetworkRequest extends NetworkRequest {
             if (!mBound.get()) {
                 Log.v(TAG, "[waitForApi] - api not ready yet.. waiting [" + Thread.currentThread().getName() + "]");
                 try {
-                    mBound.wait(10000); // wait up to 10 seconds
+                    mBound.wait(10_000); // wait up to 10 seconds
 
                     // If api is still not bound after 10 seconds.. try reconnecting
                     if (!mBound.get()) {
-                        throw new NextcloudApiNotRespondingException();
+                        throw new NextcloudApiNotRespondingException(mContext);
                     }
                 } catch (InterruptedException ex) {
                     Log.e(TAG, "WaitForAPI failed", ex);
@@ -180,14 +171,14 @@ public class AidlNetworkRequest extends NetworkRequest {
         final ParcelFileDescriptor output = performAidlNetworkRequestV2(request, requestBodyInputStream);
         final InputStream os = new ParcelFileDescriptor.AutoCloseInputStream(output);
         try {
-            final ExceptionResponse response = deserializeObjectV2(os);
+            final var response = deserializeObjectV2(os);
 
             // Handle Remote Exceptions
-            if (response.getException() != null) {
-                if (response.getException().getMessage() != null) {
-                    throw parseNextcloudCustomException(response.getException());
+            if (response.exception() != null) {
+                if (response.exception().getMessage() != null) {
+                    throw parseNextcloudCustomException(mContext, response.exception());
                 }
-                throw response.getException();
+                throw response.exception();
             }
             // os stream needs to stay open to be able to read response
             return new Response(os, response.headers);
@@ -199,91 +190,10 @@ public class AidlNetworkRequest extends NetworkRequest {
     }
 
     /**
-     * The InputStreams needs to be closed after reading from it
-     *
-     * @deprecated Use {@link #performNetworkRequestV2(NextcloudRequest, InputStream)}
-     * @see <a href="https://github.com/nextcloud/Android-SingleSignOn/issues/133">Issue #133</a>
-     * @param request                {@link NextcloudRequest} request to be executed on server via Files app
-     * @param requestBodyInputStream inputstream to be sent to the server
-     * @return InputStream answer from server as InputStream
-     * @throws Exception or SSOException
-     */
-    @Deprecated
-    public InputStream performNetworkRequest(NextcloudRequest request, InputStream requestBodyInputStream) throws Exception {
-        InputStream os = null;
-        Exception exception;
-        try {
-            os = new ParcelFileDescriptor.AutoCloseInputStream(performAidlNetworkRequest(request, requestBodyInputStream));
-            exception = deserializeObject(os);
-        } catch (ClassNotFoundException e) {
-            //e.printStackTrace();
-            exception = e;
-        }
-
-        // Handle Remote Exceptions
-        if (exception != null) {
-            // close os stream if something goes wrong and no response will be created
-            os.close();
-            if (exception.getMessage() != null) {
-                exception = parseNextcloudCustomException(exception);
-            }
-            throw exception;
-        }
-
-        // os stream needs to stay open to be able to read response
-        return os;
-    }
-
-    /**
-     * <strong>DO NOT CALL THIS METHOD DIRECTLY</strong> - use {@link #performNetworkRequest} instead
-     *
-     * @deprecated Use {@link #performAidlNetworkRequestV2(NextcloudRequest, InputStream)}
-     * @see <a href="https://github.com/nextcloud/Android-SingleSignOn/issues/133">Issue #133</a>
-     * @param request
-     * @return
-     * @throws IOException
-     */
-    @Deprecated
-    private ParcelFileDescriptor performAidlNetworkRequest(@NonNull NextcloudRequest request,
-                                                           @Nullable InputStream requestBodyInputStream)
-            throws IOException, RemoteException, NextcloudApiNotRespondingException {
-
-        // Check if we are on the main thread
-        if (Looper.myLooper() == Looper.getMainLooper()) {
-            throw new NetworkOnMainThreadException();
-        }
-
-        if (mDestroyed) {
-            throw new IllegalStateException("Nextcloud API already destroyed. Please report this issue.");
-        }
-
-        // Wait for api to be initialized
-        waitForApi();
-
-        // Log.d(TAG, request.url);
-        request.setAccountName(getAccountName());
-        request.setToken(getAccountToken());
-
-        final ByteArrayOutputStream baos = new ByteArrayOutputStream();
-        final ObjectOutputStream oos = new ObjectOutputStream(baos);
-        oos.writeObject(request);
-        oos.close();
-        baos.close();
-        InputStream is = new ByteArrayInputStream(baos.toByteArray());
-
-        try (ParcelFileDescriptor input = pipeFrom(is, thread -> Log.d(TAG, "copy data from service finished"))) {
-            return requestBodyInputStream == null
-                    ? mService.performNextcloudRequest(input)
-                    : mService.performNextcloudRequestAndBodyStream(input, pipeFrom(requestBodyInputStream, thread -> Log.d(TAG, "copy data from service finished")));
-        }
-    }
-
-    /**
      * <strong>DO NOT CALL THIS METHOD DIRECTLY</strong> - use {@link #performNetworkRequestV2} instead
      *
-     * @param request
-     * @return
-     * @throws IOException
+     * @param request, requestBodyInputStream
+     * @throws IOException, RemoteException, NextcloudApiNotRespondingException
      */
     private ParcelFileDescriptor performAidlNetworkRequestV2(@NonNull NextcloudRequest request,
                                                              @Nullable InputStream requestBodyInputStream)
@@ -301,12 +211,12 @@ public class AidlNetworkRequest extends NetworkRequest {
         request.setAccountName(getAccountName());
         request.setToken(getAccountToken());
 
-        final ByteArrayOutputStream baos = new ByteArrayOutputStream();
-        final ObjectOutputStream oos = new ObjectOutputStream(baos);
-        oos.writeObject(request);
-        oos.close();
-        baos.close();
-        final InputStream is = new ByteArrayInputStream(baos.toByteArray());
+        InputStream is;
+        try (ByteArrayOutputStream baos = new ByteArrayOutputStream();
+             ObjectOutputStream oos = new ObjectOutputStream(baos)) {
+            oos.writeObject(request);
+            is = new ByteArrayInputStream(baos.toByteArray());
+        }
 
         try (ParcelFileDescriptor input = pipeFrom(is, thread -> Log.d(TAG, "copy data from service finished"))) {
             return requestBodyInputStream == null
@@ -334,7 +244,7 @@ public class AidlNetworkRequest extends NetworkRequest {
             }
         }
 
-        return new ExceptionResponse(exception, headerList);
+        return new ExceptionResponse(headerList, exception);
     }
 
     public static class PlainHeader implements Serializable {
@@ -365,17 +275,9 @@ public class AidlNetworkRequest extends NetworkRequest {
         }
     }
 
-    private static class ExceptionResponse {
-        private final Exception exception;
-        private final ArrayList<PlainHeader> headers;
-
-        public ExceptionResponse(Exception exception, ArrayList<PlainHeader> headers) {
-            this.exception = exception;
-            this.headers = headers;
-        }
-
-        public Exception getException() {
-            return exception;
-        }
+    private record ExceptionResponse(
+        @NonNull ArrayList<PlainHeader> headers,
+        @Nullable Exception exception
+    ) {
     }
 }

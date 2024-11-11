@@ -1,23 +1,37 @@
 <resources>
-    <string name="no_current_account_selected_exception_title">Увага</string>
-    <string name="no_current_account_selected_exception_message">Жоден обліковий запис не обрано</string>
+    <!--
+      ~ Nextcloud Android SingleSignOn Library
+      ~
+      ~ SPDX-FileCopyrightText: 2018-2024 Nextcloud GmbH and Nextcloud contributors
+      ~ SPDX-License-Identifier: GPL-3.0-or-later
+    -->
+    <string name="close">Закрити</string>
 
-    <string name="android_get_accounts_permission_not_granted_exception_title">Помилка</string>
-    <string name="android_get_accounts_permission_not_granted_exception_message">Для користування функцією єдиного входу Nextcloud на цьому пристрої Ви повинні надати дозвіл на доступ до Вашого облікового запису</string>
+    <string name="unknown_error_title">Невідома помилка</string>
 
-    <string name="current_account_not_found_exception_title">Увага</string>
-    <string name="token_mismatch_title">Помилка</string>
-    <string name="token_mismatch_message">Наданий токен аутентифікації не співпадає або даному пакету не дозволено виконувати дану дію</string>
+    <string name="no_current_account_selected_exception_title">Не вибрано обліковий запис</string>
+    <string name="no_current_account_selected_exception_action">Документація</string>
 
-    <string name="nextcloud_files_app_not_installed_title">Помилка</string>
-    <string name="nextcloud_files_app_account_not_found_title">Помилка</string>
-    <string name="nextcloud_files_app_account_permission_not_granted_title">Помилка</string>
-    <string name="nextcloud_files_app_account_permission_not_granted_message">Ви мусите налати дозволи для подальшо користування службою єдиного входу.</string>
+    <string name="android_get_accounts_permission_not_granted_exception_title">Дозвіл не надано</string>
+    <string name="token_mismatch_title">Помилка авторизації</string>
+    <string name="token_mismatch_message">Наданий токен авторизації не збігається або пакунку не дозволено виконувати цю дію</string>
 
-    <string name="nextcloud_http_request_failed_title">Помилка</string>
+    <string name="nextcloud_files_app_not_installed_title">Не встановлено застосунок Nextcloud Файли</string>
+    <string name="nextcloud_files_app_not_installed_action">Встановити</string>
+
+    <string name="nextcloud_files_app_account_not_found_title">Акаунт не знайдено</string>
+    <string name="nextcloud_files_app_account_permission_not_granted_title">Дозвіл не надано</string>
+    <string name="nextcloud_http_request_failed_title">Запит не вдався</string>
     <string name="nextcloud_http_request_failed_message" formatted="true">Помилка HTTP запиту з таким статус-кодом HTTP: %1$d</string>
 
-    <string name="nextcloud_files_app_not_supported_title">Помилка</string>
+    <string name="nextcloud_files_app_no_store_installed_title">Потрібно мати встановлений застосунок Nextcloud Файли</string>
+    <string name="nextcloud_unsupported_method_action">Контакт</string>
+
+    <string name="nextcloud_files_app_not_supported_action">Оновлення</string>
+
+    <string name="nextcloud_files_api_not_responding_action">Налаштування</string>
+
     <string name="sso_canceled">Імпорт служби єдиного входу скасовано</string>
     <string name="sso_canceled_message">Імпорт служби єдиного входу скасовано користувачем</string>
-</resources>
+
+    </resources>

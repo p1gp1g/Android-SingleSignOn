@@ -1,10 +1,15 @@
+---
 kind: pipeline
 type: docker
 name: tests
 
+# SPDX-FileCopyrightText: 2019-2024 Nextcloud GmbH and Nextcloud contributors
+# SPDX-FileCopyrightText: 2019 Tobias Kaminsky <tobias@kaminsky.me>
+# SPDX-License-Identifier: GPL-3.0-or-later
+
 steps:
   - name: gplay
-    image: ghcr.io/nextcloud/continuous-integration-androidandroidbase:5
+    image: ghcr.io/nextcloud/continuous-integration-android8:3
     environment:
       LOG_USERNAME:
         from_secret: LOG_USERNAME
@@ -16,7 +21,7 @@ steps:
         from_secret: GIT_TOKEN
       ORG_GRADLE_PROJECT_coverage: ''
     commands:
-      - ./gradlew assemble
+      - ./gradlew assembleDebug
       - ./gradlew test
   - name: notify
     image: drillster/drone-email
@@ -45,7 +50,7 @@ name: analysis
 
 steps:
   - name: analysis
-    image: ghcr.io/nextcloud/continuous-integration-androidandroidbase:5
+    image: ghcr.io/nextcloud/continuous-integration-android8:3
     environment:
       GIT_USERNAME:
         from_secret: GIT_USERNAME
@@ -88,3 +93,6 @@ trigger:
   event:
     - push
     - pull_request
+---
+kind: signature
+hmac: 63263551ebeb116915aced69ffc0181e21708ba297481d7f9b23bb781cb237ef

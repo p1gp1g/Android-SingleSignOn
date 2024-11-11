@@ -1,19 +1,34 @@
 <resources>
-    <string name="unknown_error">Nežinoma klaida</string>
+    <!--
+      ~ Nextcloud Android SingleSignOn Library
+      ~
+      ~ SPDX-FileCopyrightText: 2018-2024 Nextcloud GmbH and Nextcloud contributors
+      ~ SPDX-License-Identifier: GPL-3.0-or-later
+    -->
+    <string name="close">Užverti</string>
 
-    <string name="no_current_account_selected_exception_title">Įspėjimas</string>
-    <string name="no_current_account_selected_exception_message">Kol kas nepasirinkta jokia paskyra</string>
+    <string name="unknown_error_title">Nežinoma klaida</string>
 
-    <string name="android_get_accounts_permission_not_granted_exception_title">Klaida</string>
-    <string name="current_account_not_found_exception_title">Įspėjimas</string>
-    <string name="current_account_not_found_exception_message">Pasirinkta paskyra nerasta. Kažkas nutiko.</string>
+    <string name="no_current_account_selected_exception_action">Dokumentacija</string>
 
-    <string name="token_mismatch_title">Klaida</string>
-    <string name="nextcloud_files_app_not_installed_title">Klaida</string>
-    <string name="nextcloud_files_app_account_not_found_title">Klaida</string>
-    <string name="nextcloud_files_app_account_permission_not_granted_title">Klaida</string>
-    <string name="nextcloud_http_request_failed_title">Klaida</string>
+    <string name="token_mismatch_title">Tapatybės nustatymo klaida</string>
+    <string name="token_mismatch_message">Naudojamas prieigos raktas nesutampa arba įskiepiui su šiuo pavadinimu nėra leidžiama atlikti šį veiksmą</string>
+
+    <string name="nextcloud_files_app_not_installed_action">Įdiegti</string>
+
+    <string name="nextcloud_files_app_account_not_found_title">Paskyra nerasta</string>
+    <string name="nextcloud_http_request_failed_title">Užklausa nepavyko</string>
     <string name="nextcloud_http_request_failed_message" formatted="true">HTTP užklausa patyrė nesėkmę su HTTP būsenos kodu: %1$d</string>
 
-    <string name="nextcloud_files_app_not_supported_title">Klaida</string>
+    <string name="nextcloud_files_app_no_store_installed_action">Instrukcija</string>
+
+    <string name="nextcloud_unsupported_method_action">Adresatas</string>
+
+    <string name="nextcloud_files_app_not_supported_action">Atnaujinti</string>
+
+    <string name="nextcloud_files_api_not_responding_action">Nustatymai</string>
+
+    <string name="sso_canceled">SSO įkėlimas nutrauktas</string>
+    <string name="sso_canceled_message">SSO įkėlimą nutraukė naudotojas</string>
+
     </resources>

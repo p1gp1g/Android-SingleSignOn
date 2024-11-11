@@ -1,3 +1,12 @@
+/*
+ * Nextcloud Android SingleSignOn Library
+ *
+ * SPDX-FileCopyrightText: 2018-2024 Nextcloud GmbH and Nextcloud contributors
+ * SPDX-FileCopyrightText: 2023 Stefan Niedermann <info@niedermann.it>
+ * SPDX-FileCopyrightText: 2021 Desperate Coder <echotodevnull@gmail.com>
+ * SPDX-FileCopyrightText: 2018 David Luhmer <david-dev@live.de>
+ * SPDX-License-Identifier: GPL-3.0-or-later
+ */
 package com.nextcloud.android.sso.api;
 
 import java.util.List;
@@ -21,11 +30,6 @@ import retrofit2.http.PUT;
 import retrofit2.http.Path;
 import retrofit2.http.Query;
 import retrofit2.http.Streaming;
-
-/**
- * Created by david on 22.05.17.
- */
-
 
 public interface API {
     @GET("version")
@@ -63,24 +67,24 @@ public interface API {
     );
 
     @PUT("items/read/multiple")
-    Call<Void> putMarkItemsRead(@Body String items);
+    Call<EmptyResponse> putMarkItemsRead(@Body String items);
 
     @PATCH("test")
-    Call<Void> invalidPATCH();
+    Call<EmptyResponse> invalidPATCH();
 
     @Headers({
         "X-Foo: Bar",
         "X-Ping: Pong"
     })
     @GET("test")
-    Call<Void> getWithHeader();
+    Call<EmptyResponse> getWithHeader();
 
     @GET("/test")
-    Call<Void> getDynamicHeader(@Header("Content-Range") String contentRange);
+    Call<EmptyResponse> getDynamicHeader(@Header("Content-Range") String contentRange);
 
     @NextcloudAPI.FollowRedirects
     @GET("/test")
-    Call<Void> getFollowRedirects();
+    Call<EmptyResponse> getFollowRedirects();
 
     @FormUrlEncoded
     @POST("/test")
